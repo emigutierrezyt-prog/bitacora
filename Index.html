@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bitácora de Rutas & Momentos</title>
+  <!-- Fuentes Retro / Cuaderno de viaje -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Special+Elite&family=Playfair+Display:ital,wght@0,600;1,400&display=swap" rel="stylesheet">
+  
+  <!-- Firebase SDK para sincronización en tiempo real -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <style>
+    :root {
+      --bg-papel: #f4eee1;
+      --card-papel: #fbf8f2;
+      --tinta: #2e261f;
+      --tinta-clara: #6e6459;
+      --cuero: #8c4a2f;
+      --sello-rojo: #a63a3a;
+      --verde-ruta: #425b49;
+      --dorado-vintage: #c29d53;
+      --cinta: rgba(212, 196, 168, 0.7);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg-papel);
+      background-image: 
+        radial-gradient(#dcd4c3 1px, transparent 1px),
+        radial-gradient(#dcd4c3 1px, var(--bg-papel) 1px);
+      background-size: 24px 24px;
+      background-position: 0 0, 12px 12px;
+      color: var(--tinta);
+      font-family: 'Special Elite', monospace;
+      padding: 24px 16px;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    /* Encabezado Bitácora */
+    header {
+      text-align: center;
+      margin-bottom: 32px;
+      position: relative;
+      padding-bottom: 16px;
+      border-bottom: 2px dashed #cfc2ad;
+    }
+
+    h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.2rem;
+      color: var(--cuero);
+      letter-spacing: 1px;
+    }
+
+    .subtitulo {
+      font-family: 'Caveat', cursive;
+      font-size: 1.5rem;
+      color: var(--tinta-clara);
+      margin-top: 4px;
+    }
+
+    /* Barra de herramientas / Brújula de decisión */
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 28px;
+    }
+
+    .btn {
+      font-family: 'Special Elite', monospace;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-nuevo {
+      background: var(--cuero);
+      color: #fff;
+      box-shadow: 2px 3px 0px rgba(0,0,0,0.15);
+    }
+    .btn-nuevo:hover { transform: translateY(-2px); background: #773c24; }
+
+    .btn-azar {
+      background: var(--verde-ruta);
+      color: #fff;
+      box-shadow: 2px 3px 0px rgba(0,0,0,0.15);
+    }
+    .btn-azar:hover { transform: translateY(-2px); background: #334839; }
+
+    .filtros {
+      display: flex;
+      gap: 8px;
+    }
+    .btn-filtro {
+      background: transparent;
+      border: 1px solid #bba993;
+      padding: 6px 12px;
+      color: var(--tinta-clara);
+    }
+    .btn-filtro.activo {
+      background: #e2d7c5;
+      color: var(--tinta);
+      border-color: var(--cuero);
+    }
+
+    /* Grilla de Tarjetas / Polaroids */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 24px;
+    }
+
+    /* Tarjeta estilo Ficha de Campo */
+    .tarjeta {
+      background: var(--card-papel);
+      padding: 24px 20px 20px 20px;
+      border-radius: 3px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.08);
+      position: relative;
+      border: 1px solid #e5ded2;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 230px;
+      transition: transform 0.2s ease;
+    }
+
+    .tarjeta:hover {
+      transform: translateY(-4px) rotate(-0.5deg);
+    }
+
+    /* Cinta adhesiva en la parte superior */
+    .tarjeta::before {
+      content: "";
+      position: absolute;
+      top: -10px;
+      left: 35%;
+      width: 30%;
+      height: 22px;
+      background: var(--cinta);
+      transform: rotate(1deg);
+      border-left: 2px dashed rgba(255,255,255,0.4);
+      border-right: 2px dashed rgba(255,255,255,0.4);
+    }
+
+    .categoria-tag {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--cuero);
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .titulo-lugar {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.3rem;
+      font-weight: 600;
+      line-height: 1.3;
+      margin-bottom: 8px;
+    }
+
+    .notas {
+      font-family: 'Caveat', cursive;
+      font-size: 1.3rem;
+      color: #4f463c;
+      line-height: 1.25;
+      margin-bottom: 16px;
+      flex-grow: 1;
+    }
+
+    .footer-tarjeta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px dashed #dcd3c3;
+      padding-top: 10px;
+      font-size: 0.8rem;
+      color: var(--tinta-clara);
+    }
+
+    .autor {
+      font-style: italic;
+    }
+
+    /* Sello postal de completado */
+    .sello {
+      position: absolute;
+      bottom: 20px;
+      right: 15px;
+      border: 3px double var(--sello-rojo);
+      color: var(--sello-rojo);
+      padding: 4px 8px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      transform: rotate(-12deg);
+      opacity: 0.85;
+      border-radius: 4px;
+      pointer-events: none;
+    }
+
+    .tarjeta.completada {
+      opacity: 0.85;
+      background: #f7f2e7;
+    }
+
+    .acciones-tarjeta {
+      display: flex;
+      gap: 6px;
+    }
+    .btn-icono {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1rem;
+      opacity: 0.6;
+    }
+    .btn-icono:hover { opacity: 1; }
+
+    /* Modal / Formulario */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(46, 38, 31, 0.5);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
+      z-index: 100;
+    }
+    .modal {
+      background: var(--card-papel);
+      padding: 28px;
+      border-radius: 4px;
+      max-width: 440px;
+      width: 100%;
+      border: 2px solid #cfc2ad;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+    .modal h2 {
+      font-family: 'Playfair Display', serif;
+      margin-bottom: 16px;
+      color: var(--cuero);
+    }
+    .campo {
+      margin-bottom: 14px;
+    }
+    .campo label {
+      display: block;
+      font-size: 0.85rem;
+      margin-bottom: 4px;
+      color: var(--tinta-clara);
+    }
+    .campo input, .campo select, .campo textarea {
+      width: 100%;
+      padding: 8px 10px;
+      background: #faf6ee;
+      border: 1px solid #c9bca9;
+      font-family: 'Special Elite', monospace;
+      color: var(--tinta);
+      border-radius: 3px;
+    }
+    .campo textarea {
+      font-family: 'Caveat', cursive;
+      font-size: 1.3rem;
+      resize: vertical;
+      min-height: 70px;
+    }
+    .modal-botones {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    /* Modal de Elección al Azar */
+    .ruleta-resultado {
+      text-align: center;
+      padding: 20px 0;
+    }
+    .ruleta-lugar {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.6rem;
+      color: var(--cuero);
+      margin: 12px 0;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>Bitácora de Expediciones</h1>
+      <div class="subtitulo">Rutas, rincones y momentos por descubrir</div>
+    </header>
+
+    <div class="toolbar">
+      <div style="display: flex; gap: 8px;">
+        <button class="btn btn-nuevo" onclick="abrirModalNuevo()">+ Anotar Plan</button>
+        <button class="btn btn-azar" onclick="elegirAlAzar()">🧭 ¿A dónde vamos hoy?</button>
+      </div>
+
+      <div class="filtros">
+        <button class="btn btn-filtro activo" id="filtro-todos" onclick="filtrar('todos')">Todos</button>
+        <button class="btn btn-filtro" id="filtro-pendientes" onclick="filtrar('pendientes')">Por explorar</button>
+        <button class="btn btn-filtro" id="filtro-hechos" onclick="filtrar('hechos')">Sellados</button>
+      </div>
+    </div>
+
+    <!-- Contenedor de Tarjetas -->
+    <div class="grid" id="grid-planes"></div>
+  </div>
+
+  <!-- Modal para Agregar Plan -->
+  <div class="modal-overlay" id="modal-nuevo">
+    <div class="modal">
+      <h2>Nueva Ficha de Destino</h2>
+      <div class="campo">
+        <label>Lugar o Actividad:</label>
+        <input type="text" id="input-titulo" placeholder="Ej. Cafetería secreta en el centro...">
+      </div>
+      <div class="campo">
+        <label>Categoría / Vibra:</label>
+        <select id="input-cat">
+          <option value="Cafecito & Charla">☕ Cafecito & Charla</option>
+          <option value="Cena & Tragos">🍷 Cena & Tragos</option>
+          <option value="Escapada & Camino">🌿 Escapada & Camino</option>
+          <option value="Cultura & Curiosidad">🎨 Cultura & Curiosidad</option>
+          <option value="Plan Secreto / Casero">🍿 Plan Secreto / Casero</option>
+        </select>
+      </div>
+      <div class="campo">
+        <label>Notas de la bitácora (¿Por qué se nos antojó?):</label>
+        <textarea id="input-notas" placeholder="Tienen terraza bonita, pedir el pay de queso..."></textarea>
+      </div>
+      <div class="campo">
+        <label>Anotado por:</label>
+        <input type="text" id="input-autor" placeholder="Tu nombre / inicial">
+      </div>
+      <div class="modal-botones">
+        <button class="btn btn-filtro" onclick="cerrarModal()">Cancelar</button>
+        <button class="btn btn-nuevo" onclick="guardarPlan()">Fijar en Bitácora</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal ¿A dónde vamos hoy? -->
+  <div class="modal-overlay" id="modal-azar">
+    <div class="modal">
+      <h2>La Brújula Ha Decidido</h2>
+      <div class="ruleta-resultado">
+        <div style="font-size: 2.2rem;">🧭</div>
+        <div class="ruleta-lugar" id="azar-titulo">Buscando coordenadas...</div>
+        <p class="notas" id="azar-notas"></p>
+      </div>
+      <div class="modal-botones">
+        <button class="btn btn-nuevo" onclick="cerrarModalAzar()">¡Hecho, vamos!</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ==========================================================
+       CONFIGURACIÓN DE FIREBASE (Para sincronizar en tiempo real)
+       Si aún no configuras Firebase, el sistema guarda en tu cel/PC (LocalStorage).
+       ========================================================== */
+    const firebaseConfig = {
+      // Reemplaza estos campos con los de tu proyecto de Firebase
+      apiKey: "TU_API_KEY",
+      authDomain: "TU_AUTH_DOMAIN",
+      databaseURL: "TU_DATABASE_URL",
+      projectId: "TU_PROJECT_ID",
+      storageBucket: "TU_STORAGE_BUCKET",
+      messagingSenderId: "TU_MESSAGING_ID",
+      appId: "TU_APP_ID"
+    };
+
+    let db = null;
+    let usaFirebase = false;
+
+    // Verificar si Firebase fue configurado con claves reales
+    if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "TU_API_KEY") {
+      try {
+        firebase.initializeApp(firebaseConfig);
+        db = firebase.database();
+        usaFirebase = true;
+      } catch (e) {
+        console.warn("Error iniciando Firebase, usando LocalStorage:", e);
+      }
+    }
+
+    let planes = [];
+    let filtroActual = 'todos';
+
+    // Carga de datos inicial
+    function inicializar() {
+      if (usaFirebase) {
+        db.ref("bitacora_citas").on("value", (snapshot) => {
+          const data = snapshot.val();
+          planes = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
+          render();
+        });
+      } else {
+        const local = localStorage.getItem("bitacora_planes");
+        if (local) {
+          planes = JSON.parse(local);
+        } else {
+          // Planes muestra de bienvenida
+          planes = [
+            {
+              id: "1",
+              titulo: "Café en terraza antigua",
+              cat: "☕ Cafecito & Charla",
+              notas: "Ir al atardecer para pedir café negro y tarta de frutos rojos.",
+              autor: "Pedro",
+              completado: false
+            },
+            {
+              id: "2",
+              titulo: "Librería de viejo & Caminata",
+              cat: "🎨 Cultura & Curiosidad",
+              notas: "Elegir un libro al azar para el otro.",
+              autor: "Ella",
+              completado: true,
+              fechaSello: "18 OCT"
+            }
+          ];
+          guardarLocal();
+        }
+        render();
+      }
+    }
+
+    function sincronizar(nuevosPlanes) {
+      planes = nuevosPlanes;
+      if (usaFirebase) {
+        // En Firebase se actualiza por elemento o se regenera el nodo
+      } else {
+        guardarLocal();
+        render();
+      }
+    }
+
+    function guardarLocal() {
+      localStorage.setItem("bitacora_planes", JSON.stringify(planes));
+    }
+
+    // Acciones
+    function guardarPlan() {
+      const titulo = document.getElementById("input-titulo").value.trim();
+      const cat = document.getElementById("input-cat").value;
+      const notas = document.getElementById("input-notas").value.trim();
+      const autor = document.getElementById("input-autor").value.trim() || "Anónimo";
+
+      if (!titulo) return alert("Escribe al menos el nombre del plan.");
+
+      const nuevo = {
+        titulo,
+        cat,
+        notas,
+        autor,
+        completado: false,
+        timestamp: Date.now()
+      };
+
+      if (usaFirebase) {
+        db.ref("bitacora_citas").push(nuevo);
+      } else {
+        nuevo.id = Date.now().toString();
+        planes.unshift(nuevo);
+        guardarLocal();
+        render();
+      }
+
+      cerrarModal();
+      document.getElementById("input-titulo").value = "";
+      document.getElementById("input-notas").value = "";
+    }
+
+    function toggleCompletado(id) {
+      const plan = planes.find(p => p.id === id);
+      if (!plan) return;
+
+      const nuevoEstado = !plan.completado;
+      const fecha = nuevoEstado ? new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }).toUpperCase() : "";
+
+      if (usaFirebase) {
+        db.ref("bitacora_citas/" + id).update({
+          completado: nuevoEstado,
+          fechaSello: fecha
+        });
+      } else {
+        plan.completado = nuevoEstado;
+        plan.fechaSello = fecha;
+        guardarLocal();
+        render();
+      }
+    }
+
+    function eliminarPlan(id) {
+      if (!confirm("¿Deseas retirar esta ficha de la bitácora?")) return;
+
+      if (usaFirebase) {
+        db.ref("bitacora_citas/" + id).remove();
+      } else {
+        planes = planes.filter(p => p.id !== id);
+        guardarLocal();
+        render();
+      }
+    }
+
+    // Render de Tarjetas
+    function render() {
+      const container = document.getElementById("grid-planes");
+      container.innerHTML = "";
+
+      let lista = planes;
+      if (filtroActual === 'pendientes') lista = planes.filter(p => !p.completado);
+      if (filtroActual === 'hechos') lista = planes.filter(p => p.completado);
+
+      if (lista.length === 0) {
+        container.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--tinta-clara); padding: 40px;">No hay planes en esta página de la bitácora aún...</div>`;
+        return;
+      }
+
+      lista.forEach(plan => {
+        const tarjeta = document.createElement("div");
+        tarjeta.className = `tarjeta ${plan.completado ? 'completada' : ''}`;
+
+        tarjeta.innerHTML = `
+          <div>
+            <div class="categoria-tag">${plan.cat}</div>
+            <div class="titulo-lugar">${plan.titulo}</div>
+            <div class="notas">${plan.notas || 'Sin notas adicionales.'}</div>
+          </div>
+
+          ${plan.completado ? `<div class="sello">VISITADO<br><span style="font-size:0.75rem">${plan.fechaSello || ''}</span></div>` : ''}
+
+          <div class="footer-tarjeta">
+            <span class="autor">Por: ${plan.autor}</span>
+            <div class="acciones-tarjeta">
+              <button class="btn-icono" title="${plan.completado ? 'Marcar pendiente' : 'Sellar como visitado'}" onclick="toggleCompletado('${plan.id}')">
+                ${plan.completado ? '↩️' : '🏷️'}
+              </button>
+              <button class="btn-icono" title="Eliminar" onclick="eliminarPlan('${plan.id}')">🗑️</button>
+            </div>
+          </div>
+        `;
+        container.appendChild(tarjeta);
+      });
+    }
+
+    // Filtros
+    function filtrar(tipo) {
+      filtroActual = tipo;
+      document.querySelectorAll(".btn-filtro").forEach(b => b.classList.remove("activo"));
+      document.getElementById(`filtro-${tipo}`).classList.add("activo");
+      render();
+    }
+
+    // Ruleta de decisión
+    function elegirAlAzar() {
+      const pendientes = planes.filter(p => !p.completado);
+      if (pendientes.length === 0) {
+        alert("¡Ya visitaron todos los planes guardados o no han anotado ninguno!");
+        return;
+      }
+      const elegido = pendientes[Math.floor(Math.random() * pendientes.length)];
+      document.getElementById("azar-titulo").textContent = elegido.titulo;
+      document.getElementById("azar-notas").textContent = `"${elegido.notas || 'Una buena idea sin notas previas'}"`;
+      document.getElementById("modal-azar").style.display = "flex";
+    }
+
+    function abrirModalNuevo() { document.getElementById("modal-nuevo").style.display = "flex"; }
+    function cerrarModal() { document.getElementById("modal-nuevo").style.display = "none"; }
+    function cerrarModalAzar() { document.getElementById("modal-azar").style.display = "none"; }
+
+    window.onload = inicializar;
+  </script>
+</body>
+</html>
