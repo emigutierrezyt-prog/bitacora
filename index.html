@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bitácora de Rutas & Momentos</title>
+  <title>Bitácora de Expediciones</title>
   <!-- Fuentes Retro / Cuaderno de viaje -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -46,7 +46,6 @@
       margin: 0 auto;
     }
 
-    /* Encabezado Bitácora */
     header {
       text-align: center;
       margin-bottom: 32px;
@@ -69,7 +68,6 @@
       margin-top: 4px;
     }
 
-    /* Barra de herramientas / Brújula de decisión */
     .toolbar {
       display: flex;
       flex-wrap: wrap;
@@ -122,14 +120,12 @@
       border-color: var(--cuero);
     }
 
-    /* Grilla de Tarjetas / Polaroids */
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
       gap: 24px;
     }
 
-    /* Tarjeta estilo Ficha de Campo */
     .tarjeta {
       background: var(--card-papel);
       padding: 24px 20px 20px 20px;
@@ -148,7 +144,6 @@
       transform: translateY(-4px) rotate(-0.5deg);
     }
 
-    /* Cinta adhesiva en la parte superior */
     .tarjeta::before {
       content: "";
       position: absolute;
@@ -202,7 +197,6 @@
       font-style: italic;
     }
 
-    /* Sello postal de completado */
     .sello {
       position: absolute;
       bottom: 20px;
@@ -227,18 +221,17 @@
 
     .acciones-tarjeta {
       display: flex;
-      gap: 6px;
+      gap: 8px;
     }
     .btn-icono {
       background: none;
       border: none;
       cursor: pointer;
-      font-size: 1rem;
-      opacity: 0.6;
+      font-size: 1.1rem;
+      opacity: 0.65;
     }
     .btn-icono:hover { opacity: 1; }
 
-    /* Modal / Formulario */
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -294,7 +287,6 @@
       margin-top: 18px;
     }
 
-    /* Modal de Elección al Azar */
     .ruleta-resultado {
       text-align: center;
       padding: 20px 0;
@@ -343,11 +335,11 @@
       <div class="campo">
         <label>Categoría / Vibra:</label>
         <select id="input-cat">
-          <option value="Cafecito & Charla">☕ Cafecito & Charla</option>
-          <option value="Cena & Tragos">🍷 Cena & Tragos</option>
-          <option value="Escapada & Camino">🌿 Escapada & Camino</option>
-          <option value="Cultura & Curiosidad">🎨 Cultura & Curiosidad</option>
-          <option value="Plan Secreto / Casero">🍿 Plan Secreto / Casero</option>
+          <option value="☕ Cafecito & Charla">☕ Cafecito & Charla</option>
+          <option value="🍷 Cena & Tragos">🍷 Cena & Tragos</option>
+          <option value="🌿 Escapada & Camino">🌿 Escapada & Camino</option>
+          <option value="🎨 Cultura & Curiosidad">🎨 Cultura & Curiosidad</option>
+          <option value="🍿 Plan Secreto / Casero">🍿 Plan Secreto / Casero</option>
         </select>
       </div>
       <div class="campo">
@@ -381,92 +373,45 @@
   </div>
 
   <script>
-    /* ==========================================================
-       CONFIGURACIÓN DE FIREBASE (Para sincronizar en tiempo real)
-       Si aún no configuras Firebase, el sistema guarda en tu cel/PC (LocalStorage).
-       ========================================================== */
+    // Configuración oficial de tu Firebase
     const firebaseConfig = {
-      // Reemplaza estos campos con los de tu proyecto de Firebase
-      apiKey: "TU_API_KEY",
-      authDomain: "TU_AUTH_DOMAIN",
-      databaseURL: "TU_DATABASE_URL",
-      projectId: "TU_PROJECT_ID",
-      storageBucket: "TU_STORAGE_BUCKET",
-      messagingSenderId: "TU_MESSAGING_ID",
-      appId: "TU_APP_ID"
+      apiKey: "AIzaSyDP_sKomykiAM_lMc03Ah85Fg_X0yq_Yf0",
+      authDomain: "nuestra-bitacora-personal.firebaseapp.com",
+      databaseURL: "https://nuestra-bitacora-personal-default-rtdb.firebaseio.com",
+      projectId: "nuestra-bitacora-personal",
+      storageBucket: "nuestra-bitacora-personal.firebasestorage.app",
+      messagingSenderId: "252113586285",
+      appId: "1:252113586285:web:52443ea891c6f7d91b5764",
+      measurementId: "G-QX5CKX12YX"
     };
 
-    let db = null;
-    let usaFirebase = false;
-
-    // Verificar si Firebase fue configurado con claves reales
-    if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "TU_API_KEY") {
-      try {
-        firebase.initializeApp(firebaseConfig);
-        db = firebase.database();
-        usaFirebase = true;
-      } catch (e) {
-        console.warn("Error iniciando Firebase, usando LocalStorage:", e);
-      }
-    }
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
     let planes = [];
     let filtroActual = 'todos';
 
-    // Carga de datos inicial
+    // Escucha en tiempo real de Firebase
     function inicializar() {
-      if (usaFirebase) {
-        db.ref("bitacora_citas").on("value", (snapshot) => {
-          const data = snapshot.val();
-          planes = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
-          render();
-        });
-      } else {
-        const local = localStorage.getItem("bitacora_planes");
-        if (local) {
-          planes = JSON.parse(local);
+      db.ref("bitacora_citas").on("value", (snapshot) => {
+        const data = snapshot.val();
+        if (!data) {
+          // Tarjeta inaugural de bienvenida
+          db.ref("bitacora_citas").push({
+            titulo: "Inauguración de la Bitácora",
+            cat: "☕ Cafecito & Charla",
+            notas: "¡Nuestra libreta de rutas ya está viva! Aquí iremos anotando cada rincón que se nos antoje explorar juntos.",
+            autor: "Nosotros",
+            completado: false,
+            timestamp: Date.now()
+          });
         } else {
-          // Planes muestra de bienvenida
-          planes = [
-            {
-              id: "1",
-              titulo: "Café en terraza antigua",
-              cat: "☕ Cafecito & Charla",
-              notas: "Ir al atardecer para pedir café negro y tarta de frutos rojos.",
-              autor: "Pedro",
-              completado: false
-            },
-            {
-              id: "2",
-              titulo: "Librería de viejo & Caminata",
-              cat: "🎨 Cultura & Curiosidad",
-              notas: "Elegir un libro al azar para el otro.",
-              autor: "Ella",
-              completado: true,
-              fechaSello: "18 OCT"
-            }
-          ];
-          guardarLocal();
+          planes = Object.keys(data).map(key => ({ id: key, ...data[key] })).reverse();
+          render();
         }
-        render();
-      }
+      });
     }
 
-    function sincronizar(nuevosPlanes) {
-      planes = nuevosPlanes;
-      if (usaFirebase) {
-        // En Firebase se actualiza por elemento o se regenera el nodo
-      } else {
-        guardarLocal();
-        render();
-      }
-    }
-
-    function guardarLocal() {
-      localStorage.setItem("bitacora_planes", JSON.stringify(planes));
-    }
-
-    // Acciones
     function guardarPlan() {
       const titulo = document.getElementById("input-titulo").value.trim();
       const cat = document.getElementById("input-cat").value;
@@ -484,14 +429,7 @@
         timestamp: Date.now()
       };
 
-      if (usaFirebase) {
-        db.ref("bitacora_citas").push(nuevo);
-      } else {
-        nuevo.id = Date.now().toString();
-        planes.unshift(nuevo);
-        guardarLocal();
-        render();
-      }
+      db.ref("bitacora_citas").push(nuevo);
 
       cerrarModal();
       document.getElementById("input-titulo").value = "";
@@ -505,32 +443,17 @@
       const nuevoEstado = !plan.completado;
       const fecha = nuevoEstado ? new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }).toUpperCase() : "";
 
-      if (usaFirebase) {
-        db.ref("bitacora_citas/" + id).update({
-          completado: nuevoEstado,
-          fechaSello: fecha
-        });
-      } else {
-        plan.completado = nuevoEstado;
-        plan.fechaSello = fecha;
-        guardarLocal();
-        render();
-      }
+      db.ref("bitacora_citas/" + id).update({
+        completado: nuevoEstado,
+        fechaSello: fecha
+      });
     }
 
     function eliminarPlan(id) {
       if (!confirm("¿Deseas retirar esta ficha de la bitácora?")) return;
-
-      if (usaFirebase) {
-        db.ref("bitacora_citas/" + id).remove();
-      } else {
-        planes = planes.filter(p => p.id !== id);
-        guardarLocal();
-        render();
-      }
+      db.ref("bitacora_citas/" + id).remove();
     }
 
-    // Render de Tarjetas
     function render() {
       const container = document.getElementById("grid-planes");
       container.innerHTML = "";
@@ -571,7 +494,6 @@
       });
     }
 
-    // Filtros
     function filtrar(tipo) {
       filtroActual = tipo;
       document.querySelectorAll(".btn-filtro").forEach(b => b.classList.remove("activo"));
@@ -579,7 +501,6 @@
       render();
     }
 
-    // Ruleta de decisión
     function elegirAlAzar() {
       const pendientes = planes.filter(p => !p.completado);
       if (pendientes.length === 0) {
