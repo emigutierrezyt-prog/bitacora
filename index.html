@@ -2,284 +2,563 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bitácora de Expediciones</title>
-  <!-- Fuentes Retro / Cuaderno de viaje -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Bitácora de Expediciones & Pactos</title>
+  
+  <!-- Fuentes Estilo Editorial & Cuaderno de Campo -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Special+Elite&family=Playfair+Display:ital,wght@0,600;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Cormorant+Garamond:ital,wght@0,600;0,700;1,400&family=Special+Elite&family=Playfair+Display:ital,wght@0,600;0,700;1,400&display=swap" rel="stylesheet">
   
-  <!-- Firebase SDK para sincronización en tiempo real -->
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
   <style>
     :root {
-      --bg-papel: #f4eee1;
-      --card-papel: #fbf8f2;
-      --tinta: #2e261f;
-      --tinta-clara: #6e6459;
-      --cuero: #8c4a2f;
-      --sello-rojo: #a63a3a;
-      --verde-ruta: #425b49;
-      --dorado-vintage: #c29d53;
-      --cinta: rgba(212, 196, 168, 0.7);
+      --bg-mesa: #ebe3d2;
+      --bg-papel: #f5efe2;
+      --card-papel: #fdfbf7;
+      --tinta: #28211b;
+      --tinta-clara: #6b5e51;
+      --tinta-linea: rgba(185, 170, 150, 0.35);
+      --cuero: #7c3f26;
+      --cuero-oscuro: #592b18;
+      --sello-rojo: #9e2f2f;
+      --verde-ruta: #385241;
+      --dorado-vintage: #b89146;
+      --borde-papel: #dfd5c3;
+      --sombra-suave: 0 8px 20px rgba(40, 33, 27, 0.08), 0 2px 5px rgba(40, 33, 27, 0.06);
+      --sombra-hover: 0 14px 28px rgba(40, 33, 27, 0.14), 0 4px 10px rgba(40, 33, 27, 0.08);
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
     body {
       background-color: var(--bg-papel);
       background-image: 
-        radial-gradient(#dcd4c3 1px, transparent 1px),
-        radial-gradient(#dcd4c3 1px, var(--bg-papel) 1px);
-      background-size: 24px 24px;
-      background-position: 0 0, 12px 12px;
+        radial-gradient(#cfc4b0 1.1px, transparent 1.1px),
+        radial-gradient(#dfd6c5 1.1px, var(--bg-papel) 1.1px);
+      background-size: 28px 28px;
+      background-position: 0 0, 14px 14px;
       color: var(--tinta);
       font-family: 'Special Elite', monospace;
-      padding: 24px 16px;
+      padding: 16px 12px 60px 12px;
       min-height: 100vh;
     }
 
+    /* Marco exterior estilo página de diario */
     .container {
-      max-width: 900px;
+      max-width: 940px;
       margin: 0 auto;
+      background: rgba(251, 248, 241, 0.65);
+      border: 1px solid #d8ccb8;
+      border-radius: 10px;
+      padding: 24px 16px 36px 16px;
+      box-shadow: inset 0 0 40px rgba(184, 145, 70, 0.06), 0 10px 30px rgba(0,0,0,0.05);
+      position: relative;
     }
 
+    /* Indicador de conexión en tiempo real */
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.72rem;
+      color: var(--tinta-clara);
+      margin-bottom: 12px;
+      padding: 0 4px;
+      letter-spacing: 0.5px;
+    }
+
+    .sync-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #ece4d4;
+      padding: 4px 10px;
+      border-radius: 20px;
+      border: 1px solid #d5c8b3;
+    }
+
+    .sync-dot {
+      width: 7px;
+      height: 7px;
+      background-color: #4b8b5b;
+      border-radius: 50%;
+      box-shadow: 0 0 6px #4b8b5b;
+      animation: pulse 2.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.45; transform: scale(0.85); }
+    }
+
+    /* Encabezado Editorial */
     header {
       text-align: center;
-      margin-bottom: 32px;
+      margin-bottom: 22px;
+      padding-bottom: 18px;
+      border-bottom: 2px double #cbbba2;
       position: relative;
-      padding-bottom: 16px;
-      border-bottom: 2px dashed #cfc2ad;
+    }
+
+    .ornamento-top {
+      font-size: 0.8rem;
+      letter-spacing: 4px;
+      color: var(--dorado-vintage);
+      text-transform: uppercase;
+      margin-bottom: 4px;
     }
 
     h1 {
       font-family: 'Playfair Display', serif;
-      font-size: 2.2rem;
+      font-size: 2.25rem;
       color: var(--cuero);
-      letter-spacing: 1px;
+      letter-spacing: 0.5px;
+      line-height: 1.15;
+      text-shadow: 1px 1px 0px rgba(255, 255, 255, 0.8);
     }
 
     .subtitulo {
       font-family: 'Caveat', cursive;
-      font-size: 1.5rem;
+      font-size: 1.55rem;
       color: var(--tinta-clara);
       margin-top: 4px;
     }
 
+    /* Boleto de Estadísticas / Resumen */
+    .stats-ticket {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+
+    .stat-pill {
+      background: #efe7d6;
+      border: 1px dashed #bfa98e;
+      padding: 6px 14px;
+      border-radius: 4px;
+      font-size: 0.78rem;
+      color: var(--tinta);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: inset 0 1px 2px rgba(255,255,255,0.6);
+    }
+
+    .stat-num {
+      font-weight: bold;
+      color: var(--cuero);
+      font-size: 0.95rem;
+    }
+
+    /* Pestañas estilo separadores de carpeta antigua */
+    .nav-tabs {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 22px;
+      overflow-x: auto;
+      padding: 4px 2px 6px 2px;
+      scrollbar-width: none;
+    }
+    .nav-tabs::-webkit-scrollbar { display: none; }
+
+    .nav-tab {
+      background: #e5dccb;
+      border: 1px solid #c7b79e;
+      padding: 10px 16px;
+      font-family: 'Special Elite', monospace;
+      font-size: 0.85rem;
+      color: var(--tinta-clara);
+      border-radius: 8px 8px 3px 3px;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+      white-space: nowrap;
+      position: relative;
+      box-shadow: inset 0 -3px 6px rgba(0,0,0,0.04);
+    }
+
+    .nav-tab.active {
+      background: var(--card-papel);
+      color: var(--cuero);
+      font-weight: bold;
+      border-color: var(--cuero);
+      border-bottom: 3px solid var(--dorado-vintage);
+      transform: translateY(-3px);
+      box-shadow: 0 5px 12px rgba(124, 63, 38, 0.12);
+    }
+
+    /* Barra de herramientas y buscador */
     .toolbar {
       display: flex;
-      flex-wrap: wrap;
+      flex-direction: column;
       gap: 12px;
+      margin-bottom: 26px;
+      background: rgba(238, 230, 214, 0.6);
+      padding: 14px;
+      border-radius: 6px;
+      border: 1px solid #ded3c1;
+    }
+
+    .toolbar-top {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 28px;
+    }
+
+    .btn-group-main {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
     }
 
     .btn {
       font-family: 'Special Elite', monospace;
       border: none;
-      padding: 10px 18px;
-      border-radius: 4px;
+      padding: 10px 16px;
+      border-radius: 5px;
       cursor: pointer;
-      font-size: 0.95rem;
+      font-size: 0.88rem;
       transition: all 0.2s ease;
       display: inline-flex;
       align-items: center;
       gap: 6px;
+      letter-spacing: 0.3px;
     }
 
     .btn-nuevo {
-      background: var(--cuero);
+      background: linear-gradient(135deg, var(--cuero), var(--cuero-oscuro));
       color: #fff;
-      box-shadow: 2px 3px 0px rgba(0,0,0,0.15);
+      box-shadow: 2px 3px 0px rgba(40, 33, 27, 0.25);
     }
-    .btn-nuevo:hover { transform: translateY(-2px); background: #773c24; }
+    .btn-nuevo:hover { transform: translateY(-2px); box-shadow: 3px 5px 0px rgba(40, 33, 27, 0.3); }
+    .btn-nuevo:active { transform: translateY(0); }
 
     .btn-azar {
-      background: var(--verde-ruta);
+      background: linear-gradient(135deg, var(--verde-ruta), #293d30);
       color: #fff;
-      box-shadow: 2px 3px 0px rgba(0,0,0,0.15);
+      box-shadow: 2px 3px 0px rgba(40, 33, 27, 0.25);
     }
-    .btn-azar:hover { transform: translateY(-2px); background: #334839; }
+    .btn-azar:hover { transform: translateY(-2px); }
 
     .filtros {
       display: flex;
-      gap: 8px;
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: center;
     }
+
     .btn-filtro {
-      background: transparent;
-      border: 1px solid #bba993;
+      background: var(--card-papel);
+      border: 1px solid #c9bca8;
       padding: 6px 12px;
       color: var(--tinta-clara);
-    }
-    .btn-filtro.activo {
-      background: #e2d7c5;
-      color: var(--tinta);
-      border-color: var(--cuero);
+      font-size: 0.78rem;
+      border-radius: 20px;
+      cursor: pointer;
+      font-family: 'Special Elite', monospace;
+      transition: all 0.2s ease;
     }
 
+    .btn-filtro.activo {
+      background: var(--cuero);
+      color: #fff;
+      border-color: var(--cuero-oscuro);
+      box-shadow: 0 2px 6px rgba(124, 63, 38, 0.25);
+    }
+
+    /* Grilla de Tarjetas */
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 24px;
+      grid-template-columns: repeat(auto-fill, minmax(275px, 1fr));
+      gap: 26px;
+      padding-top: 8px;
     }
 
+    /* Tarjeta con estética de Ficha de Campo & Renglones */
     .tarjeta {
-      background: var(--card-papel);
-      padding: 24px 20px 20px 20px;
-      border-radius: 3px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.08);
+      background-color: var(--card-papel);
+      padding: 26px 20px 16px 20px;
+      border-radius: 4px;
+      box-shadow: var(--sombra-suave);
       position: relative;
-      border: 1px solid #e5ded2;
+      border: 1px solid var(--borde-papel);
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      min-height: 230px;
-      transition: transform 0.2s ease;
+      min-height: 235px;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+      animation: aparecer 0.35s ease backwards;
+    }
+
+    @keyframes aparecer {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     .tarjeta:hover {
-      transform: translateY(-4px) rotate(-0.5deg);
+      transform: translateY(-5px) rotate(-0.4deg);
+      box-shadow: var(--sombra-hover);
     }
 
+    /* Cintas Washi dinámicas según la posición */
     .tarjeta::before {
       content: "";
       position: absolute;
-      top: -10px;
-      left: 35%;
-      width: 30%;
+      top: -11px;
+      left: 33%;
+      width: 34%;
       height: 22px;
-      background: var(--cinta);
-      transform: rotate(1deg);
-      border-left: 2px dashed rgba(255,255,255,0.4);
-      border-right: 2px dashed rgba(255,255,255,0.4);
+      background: rgba(210, 190, 158, 0.72);
+      transform: rotate(-1.5deg);
+      border-left: 2px dotted rgba(255,255,255,0.5);
+      border-right: 2px dotted rgba(255,255,255,0.5);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      z-index: 2;
     }
 
+    .tarjeta:nth-child(3n+2)::before {
+      background: rgba(163, 184, 159, 0.68); /* Verde salvia */
+      transform: rotate(2deg);
+      left: 30%;
+    }
+
+    .tarjeta:nth-child(3n+3)::before {
+      background: rgba(209, 156, 135, 0.68); /* Terracota suave */
+      transform: rotate(-0.8deg);
+      left: 36%;
+    }
+
+    /* Cabecera de la tarjeta */
     .categoria-tag {
-      font-size: 0.75rem;
+      font-size: 0.73rem;
       text-transform: uppercase;
-      letter-spacing: 1px;
+      letter-spacing: 0.6px;
       color: var(--cuero);
       font-weight: bold;
       margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
     }
 
-    .titulo-lugar {
+    /* Insignias */
+    .badge-persona {
+      background: #efe6d5;
+      color: #4f4337;
+      padding: 3px 9px;
+      border-radius: 12px;
+      font-size: 0.7rem;
+      border: 1px solid #d8cbb8;
+    }
+
+    .badge-no-negociable {
+      background: #fce8e8;
+      color: var(--sello-rojo);
+      border: 1px solid #e3b0b0;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+    }
+
+    .badge-negociable {
+      background: #eaf3ec;
+      color: var(--verde-ruta);
+      border: 1px solid #b5d1bc;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+    }
+
+    .badge-disgusto {
+      background: #fdf0e6;
+      color: #b85d27;
+      border: 1px solid #eec3a4;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+    }
+
+    .badge-crecimiento {
+      background: #e9f4f0;
+      color: #2f634d;
+      border: 1px solid #aed4c3;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+    }
+
+    .titulo-tarjeta {
       font-family: 'Playfair Display', serif;
-      font-size: 1.3rem;
-      font-weight: 600;
-      line-height: 1.3;
-      margin-bottom: 8px;
+      font-size: 1.32rem;
+      font-weight: 700;
+      line-height: 1.25;
+      margin-bottom: 10px;
+      color: var(--tinta);
+    }
+
+    /* Área de notas con renglones de libreta */
+    .notas-wrapper {
+      flex-grow: 1;
+      background-image: repeating-linear-gradient(
+        transparent,
+        transparent 25px,
+        var(--tinta-linea) 25px,
+        var(--tinta-linea) 26px
+      );
+      padding-top: 2px;
+      margin-bottom: 14px;
     }
 
     .notas {
       font-family: 'Caveat', cursive;
-      font-size: 1.3rem;
-      color: #4f463c;
-      line-height: 1.25;
-      margin-bottom: 16px;
-      flex-grow: 1;
+      font-size: 1.38rem;
+      color: #3e352b;
+      line-height: 26px;
+      word-break: break-word;
     }
 
+    /* Pie de tarjeta */
     .footer-tarjeta {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-top: 1px dashed #dcd3c3;
+      border-top: 1px dashed #d6cbb9;
       padding-top: 10px;
-      font-size: 0.8rem;
+      font-size: 0.76rem;
       color: var(--tinta-clara);
-    }
-
-    .autor {
-      font-style: italic;
-    }
-
-    .sello {
-      position: absolute;
-      bottom: 20px;
-      right: 15px;
-      border: 3px double var(--sello-rojo);
-      color: var(--sello-rojo);
-      padding: 4px 8px;
-      font-size: 0.85rem;
-      font-weight: bold;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      transform: rotate(-12deg);
-      opacity: 0.85;
-      border-radius: 4px;
-      pointer-events: none;
-    }
-
-    .tarjeta.completada {
-      opacity: 0.85;
-      background: #f7f2e7;
     }
 
     .acciones-tarjeta {
       display: flex;
-      gap: 8px;
+      gap: 6px;
+      align-items: center;
     }
-    .btn-icono {
-      background: none;
-      border: none;
-      cursor: pointer;
-      font-size: 1.1rem;
-      opacity: 0.65;
-    }
-    .btn-icono:hover { opacity: 1; }
 
+    .btn-icono {
+      background: #f3ede1;
+      border: 1px solid #dfd5c3;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      padding: 4px 7px;
+      transition: all 0.15s ease;
+    }
+    .btn-icono:hover {
+      background: #e5dccb;
+      transform: scale(1.08);
+    }
+
+    /* Sello Postal de Visitado */
+    .sello {
+      position: absolute;
+      bottom: 44px;
+      right: 14px;
+      border: 3px double var(--sello-rojo);
+      color: var(--sello-rojo);
+      background: rgba(253, 251, 247, 0.88);
+      padding: 4px 10px;
+      font-size: 0.82rem;
+      font-weight: bold;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      transform: rotate(-14deg);
+      border-radius: 4px;
+      pointer-events: none;
+      box-shadow: 0 2px 6px rgba(158, 47, 47, 0.15);
+      animation: estampar 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes estampar {
+      from { transform: scale(2) rotate(-25deg); opacity: 0; }
+      to { transform: scale(1) rotate(-14deg); opacity: 0.9; }
+    }
+
+    .tarjeta.completada {
+      background-color: #f6f0e4;
+    }
+    .tarjeta.completada .titulo-tarjeta {
+      color: #5c5044;
+    }
+
+    /* Modales */
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(46, 38, 31, 0.5);
+      background: rgba(35, 28, 22, 0.65);
+      backdrop-filter: blur(3px);
       display: none;
       justify-content: center;
       align-items: center;
       padding: 16px;
       z-index: 100;
     }
+
     .modal {
       background: var(--card-papel);
-      padding: 28px;
-      border-radius: 4px;
-      max-width: 440px;
+      padding: 26px 22px;
+      border-radius: 6px;
+      max-width: 450px;
       width: 100%;
-      border: 2px solid #cfc2ad;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      border: 2px solid #cbbba2;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.35);
+      position: relative;
+      animation: modalIn 0.25s ease;
     }
+
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.95) translateY(10px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
     .modal h2 {
       font-family: 'Playfair Display', serif;
       margin-bottom: 16px;
       color: var(--cuero);
+      font-size: 1.45rem;
+      border-bottom: 1px dashed #d8ccb8;
+      padding-bottom: 8px;
     }
-    .campo {
-      margin-bottom: 14px;
-    }
+
+    .campo { margin-bottom: 13px; }
     .campo label {
       display: block;
-      font-size: 0.85rem;
-      margin-bottom: 4px;
+      font-size: 0.8rem;
+      margin-bottom: 5px;
       color: var(--tinta-clara);
+      font-weight: bold;
     }
     .campo input, .campo select, .campo textarea {
       width: 100%;
-      padding: 8px 10px;
-      background: #faf6ee;
-      border: 1px solid #c9bca9;
+      padding: 9px 11px;
+      background: #faf6ed;
+      border: 1px solid #c7b9a4;
       font-family: 'Special Elite', monospace;
       color: var(--tinta);
-      border-radius: 3px;
+      border-radius: 4px;
+      font-size: 0.92rem;
+    }
+    .campo input:focus, .campo select:focus, .campo textarea:focus {
+      outline: none;
+      border-color: var(--cuero);
+      background: #fffdf9;
     }
     .campo textarea {
       font-family: 'Caveat', cursive;
-      font-size: 1.3rem;
+      font-size: 1.35rem;
       resize: vertical;
-      min-height: 70px;
+      min-height: 75px;
+      line-height: 1.25;
     }
+
     .modal-botones {
       display: flex;
       justify-content: flex-end;
@@ -287,93 +566,213 @@
       margin-top: 18px;
     }
 
+    /* Animación de la Brújula */
     .ruleta-resultado {
       text-align: center;
-      padding: 20px 0;
+      padding: 18px 8px;
+    }
+    .brujula-icono {
+      font-size: 3rem;
+      display: inline-block;
+      transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .brujula-girando {
+      transform: rotate(720deg);
     }
     .ruleta-lugar {
       font-family: 'Playfair Display', serif;
-      font-size: 1.6rem;
+      font-size: 1.65rem;
       color: var(--cuero);
-      margin: 12px 0;
+      margin: 12px 0 8px 0;
+    }
+
+    @media (max-width: 480px) {
+      h1 { font-size: 1.85rem; }
+      .container { padding: 18px 12px 28px 12px; }
+      .nav-tab { padding: 9px 12px; font-size: 0.78rem; }
     }
   </style>
 </head>
 <body>
 
   <div class="container">
-    <header>
-      <h1>Bitácora de Expediciones</h1>
-      <div class="subtitulo">Rutas, rincones y momentos por descubrir</div>
-    </header>
-
-    <div class="toolbar">
-      <div style="display: flex; gap: 8px;">
-        <button class="btn btn-nuevo" onclick="abrirModalNuevo()">+ Anotar Plan</button>
-        <button class="btn btn-azar" onclick="elegirAlAzar()">🧭 ¿A dónde vamos hoy?</button>
-      </div>
-
-      <div class="filtros">
-        <button class="btn btn-filtro activo" id="filtro-todos" onclick="filtrar('todos')">Todos</button>
-        <button class="btn btn-filtro" id="filtro-pendientes" onclick="filtrar('pendientes')">Por explorar</button>
-        <button class="btn btn-filtro" id="filtro-hechos" onclick="filtrar('hechos')">Sellados</button>
+    <!-- Barra de Estado -->
+    <div class="status-bar">
+      <span>EDICIÓN ARTESANAL</span>
+      <div class="sync-badge">
+        <span class="sync-dot"></span>
+        <span>Sincronizado en vivo</span>
       </div>
     </div>
 
-    <!-- Contenedor de Tarjetas -->
-    <div class="grid" id="grid-planes"></div>
+    <!-- Encabezado Principal -->
+    <header>
+      <div class="ornamento-top">✦ Cuaderno de Campo ✦</div>
+      <h1>Bitácora & Pactos</h1>
+      <div class="subtitulo">Rutas, acuerdos y notas de cuidado mutuo — Andi & Emil</div>
+
+      <!-- Resumen Dinámico -->
+      <div class="stats-ticket">
+        <div class="stat-pill">🗺️ Por explorar: <span class="stat-num" id="stat-pendientes">0</span></div>
+        <div class="stat-pill">🏷️ Sellados: <span class="stat-num" id="stat-sellados">0</span></div>
+        <div class="stat-pill">⚖️ Pactos & Notas: <span class="stat-num" id="stat-pactos">0</span></div>
+      </div>
+    </header>
+
+    <!-- Pestañas de Navegación -->
+    <div class="nav-tabs">
+      <button class="nav-tab active" id="tab-btn-citas" onclick="cambiarTab('citas')">🗺️ Rutas & Citas</button>
+      <button class="nav-tab" id="tab-btn-acuerdos" onclick="cambiarTab('acuerdos')">⚖️ Pactos & Límites</button>
+      <button class="nav-tab" id="tab-btn-recordatorios" onclick="cambiarTab('recordatorios')">📌 Cuidados & Convivencia</button>
+    </div>
+
+    <!-- Barra de Herramientas -->
+    <div class="toolbar" id="toolbar-area"></div>
+
+    <!-- Grilla de Fichas -->
+    <div class="grid" id="grid-elementos"></div>
   </div>
 
-  <!-- Modal para Agregar Plan -->
-  <div class="modal-overlay" id="modal-nuevo">
+  <!-- MODAL 1: CREAR / EDITAR PLAN (CITAS) -->
+  <div class="modal-overlay" id="modal-nuevo-plan">
     <div class="modal">
-      <h2>Nueva Ficha de Destino</h2>
+      <h2 id="modal-plan-header">Nueva Ficha de Destino</h2>
+      <input type="hidden" id="plan-edit-id">
       <div class="campo">
         <label>Lugar o Actividad:</label>
-        <input type="text" id="input-titulo" placeholder="Ej. Cafetería secreta en el centro...">
+        <input type="text" id="plan-titulo" placeholder="Ej. Cafetería secreta, Museo, Película...">
       </div>
       <div class="campo">
         <label>Categoría / Vibra:</label>
-        <select id="input-cat">
-          <option value="☕ Cafecito & Charla">☕ Cafecito & Charla</option>
-          <option value="🍷 Cena & Tragos">🍷 Cena & Tragos</option>
-          <option value="🌿 Escapada & Camino">🌿 Escapada & Camino</option>
-          <option value="🎨 Cultura & Curiosidad">🎨 Cultura & Curiosidad</option>
-          <option value="🍿 Plan Secreto / Casero">🍿 Plan Secreto / Casero</option>
+        <select id="plan-cat">
+          <option value="☕ CAFECITO & CHARLA">☕ Cafecito & Charla</option>
+          <option value="🍷 CENA & TRAGOS">🍷 Cena & Tragos</option>
+          <option value="🌿 ESCAPADA & CAMINO">🌿 Escapada & Camino</option>
+          <option value="🎨 CULTURA & CURIOSIDAD">🎨 Cultura & Curiosidad</option>
+          <option value="🍿 PLAN SECRETO / CASERO">🍿 Plan Secreto / Casero</option>
         </select>
       </div>
       <div class="campo">
-        <label>Notas de la bitácora (¿Por qué se nos antojó?):</label>
-        <textarea id="input-notas" placeholder="Tienen terraza bonita, pedir el pay de queso..."></textarea>
+        <label>Notas de la bitácora:</label>
+        <textarea id="plan-notas" placeholder="Detalles, antojos o por qué queremos ir..."></textarea>
       </div>
       <div class="campo">
         <label>Anotado por:</label>
-        <input type="text" id="input-autor" placeholder="Tu nombre / inicial">
+        <select id="plan-autor">
+          <option value="Emil">Emil</option>
+          <option value="Andi">Andi</option>
+          <option value="Nosotros">Nosotros</option>
+        </select>
       </div>
       <div class="modal-botones">
-        <button class="btn btn-filtro" onclick="cerrarModal()">Cancelar</button>
-        <button class="btn btn-nuevo" onclick="guardarPlan()">Fijar en Bitácora</button>
+        <button class="btn btn-filtro" onclick="cerrarModales()">Cancelar</button>
+        <button class="btn btn-nuevo" onclick="guardarPlan()">Guardar en Bitácora</button>
       </div>
     </div>
   </div>
 
-  <!-- Modal ¿A dónde vamos hoy? -->
+  <!-- MODAL 2: CREAR / EDITAR ACUERDO (PACTOS) -->
+  <div class="modal-overlay" id="modal-nuevo-acuerdo">
+    <div class="modal">
+      <h2 id="modal-acuerdo-header">Nuevo Pacto o Límite</h2>
+      <input type="hidden" id="acuerdo-edit-id">
+      <div class="campo">
+        <label>Acuerdo / Límite:</label>
+        <input type="text" id="acuerdo-titulo" placeholder="Ej. Avisar si llegaremos tarde...">
+      </div>
+      <div class="campo">
+        <label>Nivel de flexibilidad:</label>
+        <select id="acuerdo-tipo">
+          <option value="no_negociable">🛑 No Negociable (Límite fundamental)</option>
+          <option value="negociable">💬 Negociable (Flexible / Dialogable)</option>
+        </select>
+      </div>
+      <div class="campo">
+        <label>¿A quién pertenece / involucra?:</label>
+        <select id="acuerdo-persona">
+          <option value="Andi">Andi</option>
+          <option value="Emil">Emil</option>
+          <option value="Ambos">Ambos (De la relación)</option>
+        </select>
+      </div>
+      <div class="campo">
+        <label>Explicación o contexto:</label>
+        <textarea id="acuerdo-notas" placeholder="Por qué es importante y cómo cuidarlo juntos..."></textarea>
+      </div>
+      <div class="campo">
+        <label>Anotado por:</label>
+        <select id="acuerdo-autor">
+          <option value="Emil">Emil</option>
+          <option value="Andi">Andi</option>
+        </select>
+      </div>
+      <div class="modal-botones">
+        <button class="btn btn-filtro" onclick="cerrarModales()">Cancelar</button>
+        <button class="btn btn-nuevo" onclick="guardarAcuerdo()">Guardar Pacto</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 3: CREAR / EDITAR RECORDATORIO (CONVIVENCIA) -->
+  <div class="modal-overlay" id="modal-nuevo-recordatorio">
+    <div class="modal">
+      <h2 id="modal-rec-header">Nota de Cuidado Mutuo</h2>
+      <input type="hidden" id="rec-edit-id">
+      <div class="campo">
+        <label>Asunto o Recordatorio:</label>
+        <input type="text" id="rec-titulo" placeholder="Ej. A Andi no le gusta la cebolla / Puntualidad">
+      </div>
+      <div class="campo">
+        <label>Categoría:</label>
+        <select id="rec-tipo">
+          <option value="gusto_disgusto">⚠️ Gusto o Disgusto (Para evitar roces)</option>
+          <option value="crecimiento">🌱 Aspecto a Trabajar (Crecimiento personal)</option>
+        </select>
+      </div>
+      <div class="campo">
+        <label>Persona:</label>
+        <select id="rec-persona">
+          <option value="Andi">Andi</option>
+          <option value="Emil">Emil</option>
+          <option value="Ambos">Ambos</option>
+        </select>
+      </div>
+      <div class="campo">
+        <label>Detalle clave / Cómo apoyarnos:</label>
+        <textarea id="rec-notas" placeholder="Ej. Pedir sin cebolla / Salir con 15 min de margen..."></textarea>
+      </div>
+      <div class="campo">
+        <label>Anotado por:</label>
+        <select id="rec-autor">
+          <option value="Emil">Emil</option>
+          <option value="Andi">Andi</option>
+        </select>
+      </div>
+      <div class="modal-botones">
+        <button class="btn btn-filtro" onclick="cerrarModales()">Cancelar</button>
+        <button class="btn btn-nuevo" onclick="guardarRecordatorio()">Guardar Nota</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL RULETA AL AZAR -->
   <div class="modal-overlay" id="modal-azar">
     <div class="modal">
       <h2>La Brújula Ha Decidido</h2>
       <div class="ruleta-resultado">
-        <div style="font-size: 2.2rem;">🧭</div>
+        <div class="brujula-icono" id="icono-brujula">🧭</div>
         <div class="ruleta-lugar" id="azar-titulo">Buscando coordenadas...</div>
-        <p class="notas" id="azar-notas"></p>
+        <p class="notas" id="azar-notas" style="font-size:1.4rem;"></p>
       </div>
       <div class="modal-botones">
-        <button class="btn btn-nuevo" onclick="cerrarModalAzar()">¡Hecho, vamos!</button>
+        <button class="btn btn-filtro" onclick="elegirAlAzar()">🎲 Tirar de nuevo</button>
+        <button class="btn btn-nuevo" onclick="cerrarModales()">¡Hecho, vamos!</button>
       </div>
     </div>
   </div>
 
   <script>
-    // Configuración oficial de tu Firebase
+    // Configuración oficial de Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyDP_sKomykiAM_lMc03Ah85Fg_X0yq_Yf0",
       authDomain: "nuestra-bitacora-personal.firebaseapp.com",
@@ -388,56 +787,224 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    let planes = [];
-    let filtroActual = 'todos';
+    let items = [];
+    let tabActual = 'citas';
+    let subfiltroActual = 'todos';
 
-    // Escucha en tiempo real de Firebase
     function inicializar() {
       db.ref("bitacora_citas").on("value", (snapshot) => {
         const data = snapshot.val();
-        if (!data) {
-          // Tarjeta inaugural de bienvenida
-          db.ref("bitacora_citas").push({
-            titulo: "Inauguración de la Bitácora",
-            cat: "☕ Cafecito & Charla",
-            notas: "¡Nuestra libreta de rutas ya está viva! Aquí iremos anotando cada rincón que se nos antoje explorar juntos.",
-            autor: "Nosotros",
-            completado: false,
-            timestamp: Date.now()
-          });
+        if (data) {
+          items = Object.keys(data).map(key => ({ id: key, ...data[key] })).reverse();
         } else {
-          planes = Object.keys(data).map(key => ({ id: key, ...data[key] })).reverse();
-          render();
+          items = [];
         }
+        actualizarContadores();
+        render();
       });
+      actualizarToolbar();
     }
 
+    function actualizarContadores() {
+      const citas = items.filter(it => !it.seccion || it.seccion === 'citas');
+      const pendientes = citas.filter(c => !c.completado).length;
+      const sellados = citas.filter(c => c.completado).length;
+      const pactosYNotas = items.filter(it => it.seccion === 'acuerdos' || it.seccion === 'recordatorios').length;
+
+      document.getElementById("stat-pendientes").textContent = pendientes;
+      document.getElementById("stat-sellados").textContent = sellados;
+      document.getElementById("stat-pactos").textContent = pactosYNotas;
+    }
+
+    function cambiarTab(tab) {
+      tabActual = tab;
+      subfiltroActual = 'todos';
+      document.querySelectorAll(".nav-tab").forEach(t => t.classList.remove("active"));
+      document.getElementById(`tab-btn-${tab}`).classList.add("active");
+      actualizarToolbar();
+      render();
+    }
+
+    function actualizarToolbar() {
+      const tb = document.getElementById("toolbar-area");
+
+      if (tabActual === 'citas') {
+        tb.innerHTML = `
+          <div class="toolbar-top">
+            <div class="btn-group-main">
+              <button class="btn btn-nuevo" onclick="prepararNuevoPlan()">+ Anotar Plan</button>
+              <button class="btn btn-azar" onclick="elegirAlAzar()">🧭 ¿A dónde vamos hoy?</button>
+            </div>
+            <div class="filtros">
+              <button class="btn-filtro ${subfiltroActual === 'todos' ? 'activo' : ''}" onclick="setFiltro('todos')">Todos</button>
+              <button class="btn-filtro ${subfiltroActual === 'pendientes' ? 'activo' : ''}" onclick="setFiltro('pendientes')">Por explorar</button>
+              <button class="btn-filtro ${subfiltroActual === 'hechos' ? 'activo' : ''}" onclick="setFiltro('hechos')">Sellados</button>
+            </div>
+          </div>
+        `;
+      } else if (tabActual === 'acuerdos') {
+        tb.innerHTML = `
+          <div class="toolbar-top">
+            <button class="btn btn-nuevo" onclick="prepararNuevoAcuerdo()">+ Nuevo Pacto</button>
+            <div class="filtros">
+              <button class="btn-filtro ${subfiltroActual === 'todos' ? 'activo' : ''}" onclick="setFiltro('todos')">Todos</button>
+              <button class="btn-filtro ${subfiltroActual === 'no_negociable' ? 'activo' : ''}" onclick="setFiltro('no_negociable')">🛑 No Negociables</button>
+              <button class="btn-filtro ${subfiltroActual === 'negociable' ? 'activo' : ''}" onclick="setFiltro('negociable')">💬 Negociables</button>
+              <button class="btn-filtro ${subfiltroActual === 'Andi' ? 'activo' : ''}" onclick="setFiltro('Andi')">Andi</button>
+              <button class="btn-filtro ${subfiltroActual === 'Emil' ? 'activo' : ''}" onclick="setFiltro('Emil')">Emil</button>
+            </div>
+          </div>
+        `;
+      } else if (tabActual === 'recordatorios') {
+        tb.innerHTML = `
+          <div class="toolbar-top">
+            <button class="btn btn-nuevo" onclick="prepararNuevoRecordatorio()">+ Nueva Nota</button>
+            <div class="filtros">
+              <button class="btn-filtro ${subfiltroActual === 'todos' ? 'activo' : ''}" onclick="setFiltro('todos')">Todos</button>
+              <button class="btn-filtro ${subfiltroActual === 'gusto_disgusto' ? 'activo' : ''}" onclick="setFiltro('gusto_disgusto')">⚠️ Gustos / Disgustos</button>
+              <button class="btn-filtro ${subfiltroActual === 'crecimiento' ? 'activo' : ''}" onclick="setFiltro('crecimiento')">🌱 A Trabajar</button>
+              <button class="btn-filtro ${subfiltroActual === 'Andi' ? 'activo' : ''}" onclick="setFiltro('Andi')">Andi</button>
+              <button class="btn-filtro ${subfiltroActual === 'Emil' ? 'activo' : ''}" onclick="setFiltro('Emil')">Emil</button>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    function setFiltro(f) {
+      subfiltroActual = f;
+      actualizarToolbar();
+      render();
+    }
+
+    // Preparar Modales Nuevos vs Edición
+    function prepararNuevoPlan() {
+      document.getElementById("modal-plan-header").textContent = "Nueva Ficha de Destino";
+      document.getElementById("plan-edit-id").value = "";
+      document.getElementById("plan-titulo").value = "";
+      document.getElementById("plan-notas").value = "";
+      abrirModal("modal-nuevo-plan");
+    }
+
+    function prepararNuevoAcuerdo() {
+      document.getElementById("modal-acuerdo-header").textContent = "Nuevo Pacto o Límite";
+      document.getElementById("acuerdo-edit-id").value = "";
+      document.getElementById("acuerdo-titulo").value = "";
+      document.getElementById("acuerdo-notas").value = "";
+      abrirModal("modal-nuevo-acuerdo");
+    }
+
+    function prepararNuevoRecordatorio() {
+      document.getElementById("modal-rec-header").textContent = "Nota de Cuidado Mutuo";
+      document.getElementById("rec-edit-id").value = "";
+      document.getElementById("rec-titulo").value = "";
+      document.getElementById("rec-notas").value = "";
+      abrirModal("modal-nuevo-recordatorio");
+    }
+
+    function editarItem(id) {
+      const item = items.find(i => i.id === id);
+      if (!item) return;
+
+      const sec = item.seccion || 'citas';
+      if (sec === 'citas') {
+        document.getElementById("modal-plan-header").textContent = "Editar Ficha de Destino";
+        document.getElementById("plan-edit-id").value = item.id;
+        document.getElementById("plan-titulo").value = item.titulo || "";
+        document.getElementById("plan-cat").value = item.cat || "☕ CAFECITO & CHARLA";
+        document.getElementById("plan-notas").value = item.notas || "";
+        document.getElementById("plan-autor").value = item.autor || "Emil";
+        abrirModal("modal-nuevo-plan");
+      } else if (sec === 'acuerdos') {
+        document.getElementById("modal-acuerdo-header").textContent = "Editar Pacto o Límite";
+        document.getElementById("acuerdo-edit-id").value = item.id;
+        document.getElementById("acuerdo-titulo").value = item.titulo || "";
+        document.getElementById("acuerdo-tipo").value = item.tipoAcuerdo || "no_negociable";
+        document.getElementById("acuerdo-persona").value = item.persona || "Ambos";
+        document.getElementById("acuerdo-notas").value = item.notas || "";
+        document.getElementById("acuerdo-autor").value = item.autor || "Emil";
+        abrirModal("modal-nuevo-acuerdo");
+      } else if (sec === 'recordatorios') {
+        document.getElementById("modal-rec-header").textContent = "Editar Nota de Convivencia";
+        document.getElementById("rec-edit-id").value = item.id;
+        document.getElementById("rec-titulo").value = item.titulo || "";
+        document.getElementById("rec-tipo").value = item.tipoRecordatorio || "gusto_disgusto";
+        document.getElementById("rec-persona").value = item.persona || "Andi";
+        document.getElementById("rec-notas").value = item.notas || "";
+        document.getElementById("rec-autor").value = item.autor || "Emil";
+        abrirModal("modal-nuevo-recordatorio");
+      }
+    }
+
+    // Guardado y Actualización en Firebase
     function guardarPlan() {
-      const titulo = document.getElementById("input-titulo").value.trim();
-      const cat = document.getElementById("input-cat").value;
-      const notas = document.getElementById("input-notas").value.trim();
-      const autor = document.getElementById("input-autor").value.trim() || "Anónimo";
+      const editId = document.getElementById("plan-edit-id").value;
+      const titulo = document.getElementById("plan-titulo").value.trim();
+      const cat = document.getElementById("plan-cat").value;
+      const notas = document.getElementById("plan-notas").value.trim();
+      const autor = document.getElementById("plan-autor").value;
 
-      if (!titulo) return alert("Escribe al menos el nombre del plan.");
+      if (!titulo) return alert("Escribe el nombre del lugar o plan.");
 
-      const nuevo = {
-        titulo,
-        cat,
-        notas,
-        autor,
-        completado: false,
-        timestamp: Date.now()
-      };
+      if (editId) {
+        db.ref("bitacora_citas/" + editId).update({ titulo, cat, notas, autor });
+      } else {
+        db.ref("bitacora_citas").push({
+          seccion: 'citas',
+          titulo, cat, notas, autor,
+          completado: false,
+          timestamp: Date.now()
+        });
+      }
+      cerrarModales();
+    }
 
-      db.ref("bitacora_citas").push(nuevo);
+    function guardarAcuerdo() {
+      const editId = document.getElementById("acuerdo-edit-id").value;
+      const titulo = document.getElementById("acuerdo-titulo").value.trim();
+      const tipoAcuerdo = document.getElementById("acuerdo-tipo").value;
+      const persona = document.getElementById("acuerdo-persona").value;
+      const notas = document.getElementById("acuerdo-notas").value.trim();
+      const autor = document.getElementById("acuerdo-autor").value;
 
-      cerrarModal();
-      document.getElementById("input-titulo").value = "";
-      document.getElementById("input-notas").value = "";
+      if (!titulo) return alert("Escribe el acuerdo o límite.");
+
+      if (editId) {
+        db.ref("bitacora_citas/" + editId).update({ titulo, tipoAcuerdo, persona, notas, autor });
+      } else {
+        db.ref("bitacora_citas").push({
+          seccion: 'acuerdos',
+          titulo, tipoAcuerdo, persona, notas, autor,
+          timestamp: Date.now()
+        });
+      }
+      cerrarModales();
+    }
+
+    function guardarRecordatorio() {
+      const editId = document.getElementById("rec-edit-id").value;
+      const titulo = document.getElementById("rec-titulo").value.trim();
+      const tipoRecordatorio = document.getElementById("rec-tipo").value;
+      const persona = document.getElementById("rec-persona").value;
+      const notas = document.getElementById("rec-notas").value.trim();
+      const autor = document.getElementById("rec-autor").value;
+
+      if (!titulo) return alert("Escribe el asunto o recordatorio.");
+
+      if (editId) {
+        db.ref("bitacora_citas/" + editId).update({ titulo, tipoRecordatorio, persona, notas, autor });
+      } else {
+        db.ref("bitacora_citas").push({
+          seccion: 'recordatorios',
+          titulo, tipoRecordatorio, persona, notas, autor,
+          timestamp: Date.now()
+        });
+      }
+      cerrarModales();
     }
 
     function toggleCompletado(id) {
-      const plan = planes.find(p => p.id === id);
+      const plan = items.find(p => p.id === id);
       if (!plan) return;
 
       const nuevoEstado = !plan.completado;
@@ -449,73 +1016,151 @@
       });
     }
 
-    function eliminarPlan(id) {
+    function eliminarItem(id) {
       if (!confirm("¿Deseas retirar esta ficha de la bitácora?")) return;
       db.ref("bitacora_citas/" + id).remove();
     }
 
+    // Renderizado Principal
     function render() {
-      const container = document.getElementById("grid-planes");
+      const container = document.getElementById("grid-elementos");
       container.innerHTML = "";
 
-      let lista = planes;
-      if (filtroActual === 'pendientes') lista = planes.filter(p => !p.completado);
-      if (filtroActual === 'hechos') lista = planes.filter(p => p.completado);
+      let lista = [];
+
+      if (tabActual === 'citas') {
+        lista = items.filter(it => !it.seccion || it.seccion === 'citas');
+        if (subfiltroActual === 'pendientes') lista = lista.filter(p => !p.completado);
+        if (subfiltroActual === 'hechos') lista = lista.filter(p => p.completado);
+      } else if (tabActual === 'acuerdos') {
+        lista = items.filter(it => it.seccion === 'acuerdos');
+        if (subfiltroActual === 'no_negociable') lista = lista.filter(a => a.tipoAcuerdo === 'no_negociable');
+        if (subfiltroActual === 'negociable') lista = lista.filter(a => a.tipoAcuerdo === 'negociable');
+        if (subfiltroActual === 'Andi') lista = lista.filter(a => a.persona === 'Andi');
+        if (subfiltroActual === 'Emil') lista = lista.filter(a => a.persona === 'Emil');
+      } else if (tabActual === 'recordatorios') {
+        lista = items.filter(it => it.seccion === 'recordatorios');
+        if (subfiltroActual === 'gusto_disgusto') lista = lista.filter(r => r.tipoRecordatorio === 'gusto_disgusto');
+        if (subfiltroActual === 'crecimiento') lista = lista.filter(r => r.tipoRecordatorio === 'crecimiento');
+        if (subfiltroActual === 'Andi') lista = lista.filter(r => r.persona === 'Andi');
+        if (subfiltroActual === 'Emil') lista = lista.filter(r => r.persona === 'Emil');
+      }
 
       if (lista.length === 0) {
-        container.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--tinta-clara); padding: 40px;">No hay planes en esta página de la bitácora aún...</div>`;
+        let msg = "No hay planes en esta vista de la bitácora aún...";
+        if (tabActual === 'acuerdos') msg = "Aún no hay pactos registrados en esta categoría. Toca '+ Nuevo Pacto'.";
+        if (tabActual === 'recordatorios') msg = "Aún no hay notas de cuidado mutuo aquí. Toca '+ Nueva Nota'.";
+        container.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--tinta-clara); padding: 48px 20px; font-size: 1.05rem; border: 1px dashed #d5c8b4; border-radius: 6px;">${msg}</div>`;
         return;
       }
 
-      lista.forEach(plan => {
+      lista.forEach(item => {
         const tarjeta = document.createElement("div");
-        tarjeta.className = `tarjeta ${plan.completado ? 'completada' : ''}`;
+        tarjeta.className = `tarjeta ${item.completado ? 'completada' : ''}`;
 
-        tarjeta.innerHTML = `
-          <div>
-            <div class="categoria-tag">${plan.cat}</div>
-            <div class="titulo-lugar">${plan.titulo}</div>
-            <div class="notas">${plan.notas || 'Sin notas adicionales.'}</div>
-          </div>
-
-          ${plan.completado ? `<div class="sello">VISITADO<br><span style="font-size:0.75rem">${plan.fechaSello || ''}</span></div>` : ''}
-
-          <div class="footer-tarjeta">
-            <span class="autor">Por: ${plan.autor}</span>
-            <div class="acciones-tarjeta">
-              <button class="btn-icono" title="${plan.completado ? 'Marcar pendiente' : 'Sellar como visitado'}" onclick="toggleCompletado('${plan.id}')">
-                ${plan.completado ? '↩️' : '🏷️'}
-              </button>
-              <button class="btn-icono" title="Eliminar" onclick="eliminarPlan('${plan.id}')">🗑️</button>
+        if (tabActual === 'citas') {
+          tarjeta.innerHTML = `
+            <div>
+              <div class="categoria-tag">
+                <span>${item.cat || '✨ PLAN'}</span>
+              </div>
+              <div class="titulo-tarjeta">${item.titulo}</div>
+              <div class="notas-wrapper">
+                <div class="notas">${item.notas || 'Sin notas adicionales.'}</div>
+              </div>
             </div>
-          </div>
-        `;
+            ${item.completado ? `<div class="sello">VISITADO<br><span style="font-size:0.7rem">${item.fechaSello || ''}</span></div>` : ''}
+            <div class="footer-tarjeta">
+              <span>Por: <strong>${item.autor || 'Nosotros'}</strong></span>
+              <div class="acciones-tarjeta">
+                <button class="btn-icono" title="Editar" onclick="editarItem('${item.id}')">✏️</button>
+                <button class="btn-icono" title="${item.completado ? 'Desmarcar' : 'Sellar visita'}" onclick="toggleCompletado('${item.id}')">
+                  ${item.completado ? '↩️' : '🏷️'}
+                </button>
+                <button class="btn-icono" title="Eliminar" onclick="eliminarItem('${item.id}')">🗑️</button>
+              </div>
+            </div>
+          `;
+        } else if (tabActual === 'acuerdos') {
+          const esNoNeg = item.tipoAcuerdo === 'no_negociable';
+          tarjeta.innerHTML = `
+            <div>
+              <div class="categoria-tag">
+                <span class="${esNoNeg ? 'badge-no-negociable' : 'badge-negociable'}">
+                  ${esNoNeg ? '🛑 NO NEGOCIABLE' : '💬 NEGOCIABLE'}
+                </span>
+                <span class="badge-persona">👤 ${item.persona || 'Ambos'}</span>
+              </div>
+              <div class="titulo-tarjeta">${item.titulo}</div>
+              <div class="notas-wrapper">
+                <div class="notas">${item.notas || 'Sin detalles adicionales.'}</div>
+              </div>
+            </div>
+            <div class="footer-tarjeta">
+              <span>Anotó: <strong>${item.autor || 'Nosotros'}</strong></span>
+              <div class="acciones-tarjeta">
+                <button class="btn-icono" title="Editar" onclick="editarItem('${item.id}')">✏️</button>
+                <button class="btn-icono" title="Eliminar" onclick="eliminarItem('${item.id}')">🗑️</button>
+              </div>
+            </div>
+          `;
+        } else if (tabActual === 'recordatorios') {
+          const esDisgusto = item.tipoRecordatorio === 'gusto_disgusto';
+          tarjeta.innerHTML = `
+            <div>
+              <div class="categoria-tag">
+                <span class="${esDisgusto ? 'badge-disgusto' : 'badge-crecimiento'}">
+                  ${esDisgusto ? '⚠️ GUSTO / DISGUSTO' : '🌱 A TRABAJAR'}
+                </span>
+                <span class="badge-persona">👤 ${item.persona || 'Ambos'}</span>
+              </div>
+              <div class="titulo-tarjeta">${item.titulo}</div>
+              <div class="notas-wrapper">
+                <div class="notas">${item.notas || 'Sin notas adicionales.'}</div>
+              </div>
+            </div>
+            <div class="footer-tarjeta">
+              <span>Anotó: <strong>${item.autor || 'Nosotros'}</strong></span>
+              <div class="acciones-tarjeta">
+                <button class="btn-icono" title="Editar" onclick="editarItem('${item.id}')">✏️</button>
+                <button class="btn-icono" title="Eliminar" onclick="eliminarItem('${item.id}')">🗑️</button>
+              </div>
+            </div>
+          `;
+        }
+
         container.appendChild(tarjeta);
       });
     }
 
-    function filtrar(tipo) {
-      filtroActual = tipo;
-      document.querySelectorAll(".btn-filtro").forEach(b => b.classList.remove("activo"));
-      document.getElementById(`filtro-${tipo}`).classList.add("activo");
-      render();
-    }
-
+    // Sorteo con animación de brújula
     function elegirAlAzar() {
-      const pendientes = planes.filter(p => !p.completado);
-      if (pendientes.length === 0) {
-        alert("¡Ya visitaron todos los planes guardados o no han anotado ninguno!");
+      const citasPendientes = items.filter(it => (!it.seccion || it.seccion === 'citas') && !it.completado);
+      if (citasPendientes.length === 0) {
+        alert("¡No hay planes pendientes por explorar en la bitácora!");
         return;
       }
-      const elegido = pendientes[Math.floor(Math.random() * pendientes.length)];
-      document.getElementById("azar-titulo").textContent = elegido.titulo;
-      document.getElementById("azar-notas").textContent = `"${elegido.notas || 'Una buena idea sin notas previas'}"`;
-      document.getElementById("modal-azar").style.display = "flex";
+
+      abrirModal("modal-azar");
+      const icono = document.getElementById("icono-brujula");
+      icono.classList.remove("brujula-girando");
+      void icono.offsetWidth; // Reiniciar animación
+      icono.classList.add("brujula-girando");
+
+      document.getElementById("azar-titulo").textContent = "Girando la brújula...";
+      document.getElementById("azar-notas").textContent = "";
+
+      setTimeout(() => {
+        const elegido = citasPendientes[Math.floor(Math.random() * citasPendientes.length)];
+        document.getElementById("azar-titulo").textContent = elegido.titulo;
+        document.getElementById("azar-notas").textContent = `"${elegido.notas || 'Un gran plan nos espera hoy'}"`;
+      }, 450);
     }
 
-    function abrirModalNuevo() { document.getElementById("modal-nuevo").style.display = "flex"; }
-    function cerrarModal() { document.getElementById("modal-nuevo").style.display = "none"; }
-    function cerrarModalAzar() { document.getElementById("modal-azar").style.display = "none"; }
+    function abrirModal(id) { document.getElementById(id).style.display = "flex"; }
+    function cerrarModales() {
+      document.querySelectorAll(".modal-overlay").forEach(m => m.style.display = "none");
+    }
 
     window.onload = inicializar;
   </script>
